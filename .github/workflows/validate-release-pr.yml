@@ -1,0 +1,24 @@
+name: Validate Release PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate-release-source:
+    name: Validate Release Source
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ensure PR comes from release branch
+        shell: bash
+        run: |
+          echo "Source branch: ${{ github.head_ref }}"
+
+          if [[ "${{ github.head_ref }}" != release/* ]]; then
+            echo "ERROR: Pull requests into main must come from a release/* branch."
+            exit 1
+          fi
+
+          echo "Valid release branch."
