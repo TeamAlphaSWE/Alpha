@@ -6,7 +6,7 @@ on:
       - 'release/**'
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
 
 jobs:
@@ -16,12 +16,23 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Create sync PR
+      - name: Create sync PR when needed
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_BRANCH: ${{ github.ref_name }}
         run: |
+          git fetch origin dev
+
+          COMMITS_AHEAD=$(git rev-list --count origin/dev..HEAD)
+
+          if [ "$COMMITS_AHEAD" -eq 0 ]; then
+            echo "$RELEASE_BRANCH has no commits that need syncing to dev."
+            exit 0
+          fi
+
           EXISTING_PR=$(gh pr list \
             --base dev \
             --head "$RELEASE_BRANCH" \
@@ -36,5 +47,5 @@ jobs:
               --title "Sync $RELEASE_BRANCH back to dev" \
               --body "Automatically syncs release fixes back into dev."
           else
-            echo "Existing sync PR #$EXISTING_PR will include the new commits."
+            echo "Existing sync PR #$EXISTING_PR already contains the latest release commits."
           fi
